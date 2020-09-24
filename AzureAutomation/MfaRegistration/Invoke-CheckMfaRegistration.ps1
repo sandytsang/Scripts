@@ -49,10 +49,10 @@ if($UsersRespond) {
         $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
         $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
         if($NoMFAUsersRespond.value -ne $null) {
-            Write-Output "$userPrincipalName doesnot have MFA"
+            Write-Output "$userPrincipalName does not have MFA"
         }
         else {
-            Write-Output "$($UserPrincipalName) has aleeady MFA"
+            Write-Output "$($UserPrincipalName) has already MFA"
         }
     }
 
@@ -68,10 +68,10 @@ if($UsersRespond) {
             $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
             $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
             if($NoMFAUsersRespond.value -ne $null) {
-                Write-Output "$userPrincipalName doesnot have MFA"
+                Write-Output "$userPrincipalName does not have MFA"
             }
             else {
-                Write-Output "$($UserPrincipalName) has aleeady MFA"
+                Write-Output "$($UserPrincipalName) has already MFA"
             }           
         }
     }
