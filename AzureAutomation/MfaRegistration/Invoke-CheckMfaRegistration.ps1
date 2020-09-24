@@ -47,7 +47,7 @@ if($UsersRespond) {
     foreach ($User in $Users) {
         $userPrincipalName = $($user.userPrincipalName)
         $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
-        $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenApp
+        $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
         if($NoMFAUsersRespond.value -ne $null) {
             Write-Output "$userPrincipalName doesnot have MFA"
         }
@@ -66,7 +66,7 @@ if($UsersRespond) {
         foreach ($User in $Users) {
             $userPrincipalName = $($user.userPrincipalName)
             $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
-            $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenApp
+            $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
             if($NoMFAUsersRespond.value -ne $null) {
                 Write-Output "$userPrincipalName doesnot have MFA"
             }
