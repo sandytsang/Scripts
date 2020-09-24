@@ -48,9 +48,9 @@ if($UsersRespond) {
     #Get MFA is not registered
     foreach ($User in $Users) {
         $userPrincipalName = $($user.userPrincipalName)
-        $uri = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq `'$userPrincipalName`' and isMfaRegistered eq false"
+        $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
         $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenApp
-        if($NoMFAUsersRespond.value) {
+        if($NoMFAUsersRespond.value -ne $null) {
             Write-Output "$userPrincipalName doesnot have MFA"
             $url = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
             $ObjectBody = @{
@@ -79,9 +79,9 @@ if($UsersRespond) {
         #Get MFA is not registered
         foreach ($User in $Users) {
             $userPrincipalName = $($user.userPrincipalName)
-            $uri = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq `'$userPrincipalName`' and isMfaRegistered eq false"
+            $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
             $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenApp
-            if($NoMFAUsersRespond.value) {
+            if($NoMFAUsersRespond.value -ne $null) {
                 Write-Output "$userPrincipalName doesnot have MFA"
                 $url = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
                 $ObjectBody = @{
