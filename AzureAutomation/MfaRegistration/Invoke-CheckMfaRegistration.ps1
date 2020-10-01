@@ -5,7 +5,6 @@ $Tenant = "mvp24.onmicrosoft.com" #List here your tenants
 $authority = "https://login.microsoftonline.com/$tenant/oauth2/v2.0/token"
 $AppID = Get-AutomationVariable -Name "AppID" #Change this to your own app ID
 $AppSecret = Get-AutomationVariable -Name "AppSecret" #Change this to your own App Secret
-$AuthenticationCredentials = Get-AutomationPSCredential -Name "Something@mvp24.onmicrosoft.com"
 $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
 
 ###Get Access Token for Application permission
@@ -30,81 +29,106 @@ catch {
     Write-Warning "$Error[0]"
 }
 
-###Get Access Token for delegated permission
-$requestUser = Get-MsalToken -ClientId $AppID -TenantId $Tenant -UserCredential $AuthenticationCredentials -RedirectUri "https://login.microsoftonline.com/common/oauth2/nativeclient" -Verbose
-$access_token = $requestUser.CreateAuthorizationHeader()
-$AuthTokenUser = @{
-    Authorization = "$access_token"
-}
-
-#uery Group members 
-$uri = "https://graph.microsoft.com/beta//groups/$GroupObjectId/members?`$select=userPrincipalName,mail,userType,mobilePhone"
-$UsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenApp -ErrorAction SilentlyContinue
-if($UsersRespond) {
-    #Get the first page max 1000 user information
-    $Users = $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
-    #Get MFA is not registered
-    foreach ($User in $Users) {
-        do {
-            try {
-                $userPrincipalName = $($user.userPrincipalName)
-                $uri = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq `'$userPrincipalName`' and isMfaRegistered eq false"
-                $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
-                $StatusCode = $NoMFAUsersRespond.StatusCode
-            }
-            catch {
-                $StatusCode = $_.Exception.Response.StatusCode.value__
-                if ($StatusCode -eq 429) {
-                    Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-                    Start-Sleep -Seconds 45
-                }
-                else {
-                    Write-Error $_.Exception
-                }
-            }
-        } while ($StatusCode -eq 429)
-
-        if($NoMFAUsersRespond.value) {
-            Write-Output "$userPrincipalName does not have MFA"
+##Get all no MFA registered users
+$NoMFAUsers = @()
+do {
+    try {
+        $url = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=isMfaRegistered eq false"
+        $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $url -Headers $AuthTokenApp
+        $NoMFAUsers = $NoMFAUsersRespond.value
+        $StatusCode = $NoMFAUsersRespond.StatusCode
+    }
+    catch {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        if ($StatusCode -eq 429) {
+            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+            Start-Sleep -Seconds 10
         }
         else {
-            Write-Output "$($UserPrincipalName) has already MFA"
+            Write-Error $_.Exception
         }
     }
+} 
+while ($StatusCode -eq 429)
 
-    #Get Next Page users information
-    $UsersNextLink = $UsersRespond."@odata.nextLink"
-    while ($UsersNextLink -ne $null){
-        $UsersRespond = (Invoke-RestMethod -Method Get -Uri $UsersNextLink -Headers $AuthTokenApp)
-        $UsersNextLink = $UsersRespond."@odata.nextLink"
-        $Users = $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
-        #Get MFA is not registered
-        foreach ($User in $Users) {
-            do {
-                try {
-                    $userPrincipalName = $($user.userPrincipalName)
-                    $uri = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq `'$userPrincipalName`' and isMfaRegistered eq false"
-                    $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
-                    $StatusCode = $NoMFAUsersRespond.StatusCode
-                }
-                catch {
-                    $StatusCode = $_.Exception.Response.StatusCode.value__
-                    if ($StatusCode -eq 429) {
-                        Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-                        Start-Sleep -Seconds 45
-                    }
-                    else {
-                        Write-Error $_.Exception
-                    }
-                }
-            } while ($StatusCode -eq 429)
-    
-            if($NoMFAUsersRespond.value) {
-                Write-Output "$userPrincipalName does not have MFA"
-            }
-            else {
-                Write-Output "$($UserPrincipalName) has already MFA"
-            }
+#Get Next page users
+do {
+    try {
+        $NoMFAUsersNextLink = $NoMFAUsersRespond."@odata.nextLink"
+        while ($NoMFAUsersNextLink -ne $null){
+            $NoMFAUsersRespond = (Invoke-RestMethod -Method Get -Uri $NoMFAUsersNextLink -Headers $AuthTokenApp)
+            $StatusCode = $NoMFAUsersRespond.StatusCode
+            $NoMFAUsersNextLink = $NoMFAUsersRespond."@odata.nextLink"
+            $NoMFAUsers += $NoMFAUsersRespond.value
         }
     }
-}
+    catch {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        if ($StatusCode -eq 429) {
+            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+            Start-Sleep -Seconds 10
+        }
+        else {
+            Write-Error $_.Exception
+        }
+    }
+} 
+while ($StatusCode -eq 429)
+
+#All No MFA users principalName
+$NoMFAUsersUPN = $NoMFAUsers.userPrincipalName
+
+##Get members from Azure AD group
+$Users = @()
+do {
+    try {
+        $url = "https://graph.microsoft.com/beta//groups/$GroupObjectId/members?`$select=userPrincipalName,mail,userType,mobilePhone"
+        $UsersRespond = Invoke-RestMethod -Method Get -Uri $url -Headers $AuthTokenApp -ErrorAction SilentlyContinue
+        $StatusCode = $UsersRespond.StatusCode
+
+        #Filter out guest users and no mobile phone number users
+        $Users = $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
+    }
+    catch {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        if ($StatusCode -eq 429) {
+            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+            Start-Sleep -Seconds 10
+        }
+        else {
+            Write-Error $_.Exception
+        }
+    }
+} 
+while ($StatusCode -eq 429)
+
+#Get Next Page users
+do {
+    try {        
+        $UsersNextLink = $UsersRespond."@odata.nextLink"
+        while ($UsersNextLink -ne $null){
+            $UsersRespond = (Invoke-RestMethod -Method Get -Uri $UsersNextLink -Headers $AuthTokenApp)
+            $StatusCode = $UsersRespond.StatusCode
+            $UsersNextLink = $UsersRespond."@odata.nextLink"
+            $Users += $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
+        }
+    }
+    catch {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        if ($StatusCode -eq 429) {
+            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+            Start-Sleep -Seconds 10
+        }
+        else {
+            Write-Error $_.Exception
+        }
+    }
+} 
+while ($StatusCode -eq 429)
+
+#All Group Member user PrindipalName
+$GroupMemberUPN = $Users.userPrincipalName
+
+#Compare results and get no MFA register user that are belong to the Azure AD group
+$UserObject = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
+Write-Output "$UserObject does not have MFA"        
