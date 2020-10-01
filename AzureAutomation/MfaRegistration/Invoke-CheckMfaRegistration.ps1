@@ -66,7 +66,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
@@ -90,7 +90,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
@@ -117,7 +117,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
@@ -141,7 +141,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
