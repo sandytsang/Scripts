@@ -19,6 +19,7 @@
 .VERSION HISTORY:
     1.0.0 - (2020-09-23) Script created
     1.1.0 - (2000-10-01) Added throttling handling
+    1.1.1 - (2000-10-01) Credit from Jan Ketil Skanke, make better throttling and paging https://github.com/MSEndpointMgr/AzureAD/blob/master/MSGraph-HandlePagingandThrottling.ps1
 #>
 
 Import-Module -Name MSAL.PS
@@ -55,107 +56,92 @@ catch {
 
 #Get all no MFA registered users
 $NoMFAUsers = @()
-do {
-    try {
-        $url = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=isMfaRegistered eq false"
-        $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $url -Headers $AuthTokenApp
-        $NoMFAUsers = $NoMFAUsersRespond.value
-        $StatusCode = $NoMFAUsersRespond.StatusCode
-    }
-    catch {
-        $StatusCode = $_.Exception.Response.StatusCode.value__
-        if ($StatusCode -eq 429) {
-            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
-        }
-        else {
-            Write-Error $_.Exception
-        }
-    }
-} 
-while ($StatusCode -eq 429)
+$url = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=isMfaRegistered eq false"
 
-#Get Next page users
 do {
+    $RetryIn = "0"
+    $ThrottledRun = $false
+    Write-Output "Querying $url"
     try {
-        $NoMFAUsersNextLink = $NoMFAUsersRespond."@odata.nextLink"
-        while ($NoMFAUsersNextLink -ne $null){
-            $NoMFAUsersRespond = (Invoke-RestMethod -Method Get -Uri $NoMFAUsersNextLink -Headers $AuthTokenApp)
-            $StatusCode = $NoMFAUsersRespond.StatusCode
-            $NoMFAUsersNextLink = $NoMFAUsersRespond."@odata.nextLink"
-            $NoMFAUsers += $NoMFAUsersRespond.value
-        }
+        $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $url -Headers $AuthTokenApp
     }
     catch {
-        $StatusCode = $_.Exception.Response.StatusCode.value__
-        if ($StatusCode -eq 429) {
-            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
-        }
+        $ErrorMessage = $_.Exception.Message
+        $MyError = $_.Exception
+        if (($MyError.Response.StatusCode) -eq "429") {
+            $ThrottledRun = $true
+            $RetryIn = $MyError.Response.Headers["Retry-After"]
+            Write-Warning -Message "Graph queries is being throttled by Microsoft"
+            Write-Output "Settings throttle retry to $($RetryIn)"
+        } 
         else {
-            Write-Error $_.Exception
+            Write-Error -Message "Inital graph query failed with $ErrorMessage"
+            Exit 1
         }
     }
+
+    if ($ThrottledRun -eq $false) {
+        #If request is not throttled put data into result object
+        $NoMFAUsers += $NoMFAUsersRespond.value
+
+        #If request is not trottled, go to nextlink if available to fetch more data
+        $url = $NoMFAUsersRespond.'@odata.nextlink'
+    }
+
+
+    Start-Sleep -Seconds $RetryIn
 } 
-while ($StatusCode -eq 429)
+Until (!($url))
+
 
 #All No MFA users principalName
 $NoMFAUsersUPN = $NoMFAUsers.userPrincipalName
 
 #Get members from Azure AD group
-$Users = @()
+$GroupMembers = @()
+$url = "https://graph.microsoft.com/beta//groups/$GroupObjectId/members?`$select=userPrincipalName,mail,userType,mobilePhone"
 do {
+    $RetryIn = "0"
+    $ThrottledRun = $false
+    Write-Output "Querying $url"    
     try {
-        $url = "https://graph.microsoft.com/beta//groups/$GroupObjectId/members?`$select=userPrincipalName,mail,userType,mobilePhone"
         $UsersRespond = Invoke-RestMethod -Method Get -Uri $url -Headers $AuthTokenApp -ErrorAction SilentlyContinue
-        $StatusCode = $UsersRespond.StatusCode
-
-        #Filter out guest users and no mobile phone number users
-        $Users = $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
     }
     catch {
-        $StatusCode = $_.Exception.Response.StatusCode.value__
-        if ($StatusCode -eq 429) {
-            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
-        }
+        $ErrorMessage = $_.Exception.Message
+        $MyError = $_.Exception
+        if (($MyError.Response.StatusCode) -eq "429") {
+            $ThrottledRun = $true
+            $RetryIn = $MyError.Response.Headers["Retry-After"]
+            Write-Warning -Message "Graph queries is being throttled by Microsoft"
+            Write-Output "Settings throttle retry to $($RetryIn)"
+        } 
         else {
-            Write-Error $_.Exception
+            Write-Error -Message "Inital graph query failed with $ErrorMessage"
+            Exit 1
         }
     }
-} 
-while ($StatusCode -eq 429)
 
-#Get Next Page users
-do {
-    try {        
-        $UsersNextLink = $UsersRespond."@odata.nextLink"
-        while ($UsersNextLink -ne $null){
-            $UsersRespond = (Invoke-RestMethod -Method Get -Uri $UsersNextLink -Headers $AuthTokenApp)
-            $StatusCode = $UsersRespond.StatusCode
-            $UsersNextLink = $UsersRespond."@odata.nextLink"
-            $Users += $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
-        }
+    if ($ThrottledRun -eq $false) {
+        #If request is not throttled put data into result object      
+        $GroupMembers += $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
+
+        #If request is not trottled, go to nextlink if available to fetch more data
+        $url = $NoMFAUsersRespond.'@odata.nextlink'        
     }
-    catch {
-        $StatusCode = $_.Exception.Response.StatusCode.value__
-        if ($StatusCode -eq 429) {
-            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
-        }
-        else {
-            Write-Error $_.Exception
-        }
-    }
+
+    $url = $UsersRespond.'@odata.nextlink'
+    Start-Sleep -Seconds $RetryIn
+
 } 
-while ($StatusCode -eq 429)
+Until (!($url))
 
 #All Group Member user PrindipalName
-$GroupMemberUPN = $Users.userPrincipalName
+$GroupMemberUPN = $GroupMembers.userPrincipalName
 
 #Compare results and get no MFA register user that are belong to the Azure AD group
 $UserObjects = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
 foreach ($UserObject in $UserObjects) {
     Write-Output "====================================================================="      
     Write-Output "$UserObject does not have MFA."
-}     
+}
