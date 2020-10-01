@@ -1,3 +1,26 @@
+<#
+.SYNOPSIS
+    This script is for get no MFA registered users, use in Azure Automation Account
+
+.DESCRIPTION
+    This script will get no MFA registered users
+
+.NOTES
+    File name: Invoke-CheckMfaRegistration.ps1
+    VERSION: 1.1.0
+    AUTHOR: Sandy Zeng
+    Created:  2020-09-23
+    COPYRIGHT:
+    Sandy Zeng / https://www.sandyzeng.com
+    Licensed under the MIT license.
+    Please credit me if you fint this script useful and do some cool things with it.
+
+
+.VERSION HISTORY:
+    1.0.0 - (2020-09-23) Script created
+    1.1.0 - (2000-10-01) Added throttling handling
+#>
+
 Import-Module -Name MSAL.PS
 
 $scope = "https://graph.microsoft.com/.default"

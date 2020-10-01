@@ -1,3 +1,26 @@
+<#
+.SYNOPSIS
+    This script is for register users MFA authendication method with mobile phone number, use in Azure Automation Account
+
+.DESCRIPTION
+    This script will automatic add users mobile phone number as MFA authendication method
+
+.NOTES
+    File name: Invoke-RegisterMFAwithMobileNumbers.ps1
+    VERSION: 1.1.0
+    AUTHOR: Sandy Zeng
+    Created:  2020-09-23
+    COPYRIGHT:
+    Sandy Zeng / https://www.sandyzeng.com
+    Licensed under the MIT license.
+    Please credit me if you fint this script useful and do some cool things with it.
+
+
+.VERSION HISTORY:
+    1.0.0 - (2020-09-23) Script created
+    1.1.0 - (2000-10-01) Added throttling handling
+#>
+
 Import-Module -Name MSAL.PS
 
 $scope = "https://graph.microsoft.com/.default"
