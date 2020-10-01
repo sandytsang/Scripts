@@ -144,6 +144,7 @@ Write-Output "$UserObject does not have MFA"
 
 #Provision users mobile phone number as authentication phone method
 foreach ($UserObject in $UserObjects) {
+    Write-Output "$UserObject does not have MFA, start provisiong phone methods for MFA"  
     $UserMobilePhone = ($Users | Where-Object {$_.userPrincipalName -match "$UserObject"}).mobilePhone
     $url = "https://graph.microsoft.com/beta/users/$UserObject/authentication/phoneMethods"
     $ObjectBody = @{
@@ -154,16 +155,20 @@ foreach ($UserObject in $UserObjects) {
     do {
         try {  
             Invoke-RestMethod -Method POST -Uri $url -Headers $AuthTokenUser -Body $json -Verbose
+            Write-Output "$UserObject MFA methods is configured."  
         }
-    catch {
-        $StatusCode = $_.Exception.Response.StatusCode.value__
-        if ($StatusCode -eq 429) {
-            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
-        }
-        else {
-            Write-Error $_.Exception
+        catch 
+        {
+            $StatusCode = $_.Exception.Response.StatusCode.value__
+            if ($StatusCode -eq 429) {
+                Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+                Start-Sleep -Seconds 45
+            }
+            else {
+                Write-Error $_.Exception
+            }
+            
         }
     }
+    while ($StatusCode -eq 429)
 }
-while ($StatusCode -eq 429)

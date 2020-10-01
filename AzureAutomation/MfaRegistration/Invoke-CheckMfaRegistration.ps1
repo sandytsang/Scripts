@@ -131,4 +131,6 @@ $GroupMemberUPN = $Users.userPrincipalName
 
 #Compare results and get no MFA register user that are belong to the Azure AD group
 $UserObject = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
-Write-Output "$UserObject does not have MFA"        
+foreach ($UserObject in $UserObjects) {
+    Write-Output "$UserObject does not have MFA."
+}     
