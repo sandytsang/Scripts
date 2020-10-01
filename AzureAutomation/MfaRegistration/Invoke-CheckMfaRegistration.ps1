@@ -45,9 +45,25 @@ if($UsersRespond) {
     $Users = $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
     #Get MFA is not registered
     foreach ($User in $Users) {
-        $userPrincipalName = $($user.userPrincipalName)
-        $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
-        $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
+        do {
+            try {
+                $userPrincipalName = $($user.userPrincipalName)
+                $uri = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq `'$userPrincipalName`' and isMfaRegistered eq false"
+                $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
+                $StatusCode = $NoMFAUsersRespond.StatusCode
+            }
+            catch {
+                $StatusCode = $_.Exception.Response.StatusCode.value__
+                if ($StatusCode -eq 429) {
+                    Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+                    Start-Sleep -Seconds 45
+                }
+                else {
+                    Write-Error $_.Exception
+                }
+            }
+        } while ($StatusCode -eq 429)
+
         if($NoMFAUsersRespond.value -ne $null) {
             Write-Output "$userPrincipalName does not have MFA"
         }
@@ -64,15 +80,31 @@ if($UsersRespond) {
         $Users = $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
         #Get MFA is not registered
         foreach ($User in $Users) {
-            $userPrincipalName = $($user.userPrincipalName)
-            $uri = "https://graph.microsoft.com/beta/users/$userPrincipalName/authentication/phoneMethods"
-            $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
+            do {
+                try {
+                    $userPrincipalName = $($user.userPrincipalName)
+                    $uri = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetails?`$filter=userPrincipalName eq `'$userPrincipalName`' and isMfaRegistered eq false"
+                    $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $uri -Headers $AuthTokenUser
+                    $StatusCode = $NoMFAUsersRespond.StatusCode
+                }
+                catch {
+                    $StatusCode = $_.Exception.Response.StatusCode.value__
+                    if ($StatusCode -eq 429) {
+                        Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+                        Start-Sleep -Seconds 45
+                    }
+                    else {
+                        Write-Error $_.Exception
+                    }
+                }
+            } while ($StatusCode -eq 429)
+    
             if($NoMFAUsersRespond.value -ne $null) {
                 Write-Output "$userPrincipalName does not have MFA"
             }
             else {
                 Write-Output "$($UserPrincipalName) has already MFA"
-            }           
+            }
         }
     }
 }
