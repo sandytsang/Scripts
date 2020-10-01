@@ -27,9 +27,9 @@ Import-Module -Name MSAL.PS
 $scope = "https://graph.microsoft.com/.default"
 $Tenant = "mvp24.onmicrosoft.com" #List here your tenants
 $authority = "https://login.microsoftonline.com/$tenant/oauth2/v2.0/token"
-$AppID = Get-AutomationVariable -Name "AppID" #Change this to your own app ID
-$AppSecret = Get-AutomationVariable -Name "AppSecret" #Change this to your own App Secret
-$AuthenticationCredentials = Get-AutomationPSCredential -Name "something@mvp24.onmicrosoft.com"
+$AppID = Get-AutomationVariable -Name "AppID" #Change this to your own Azure Automation app ID
+$AppSecret = Get-AutomationVariable -Name "AppSecret" #Change this to your own Azure Automation App Secret
+$AuthenticationCredentials = Get-AutomationPSCredential -Name "something@mvp24.onmicrosoft.com" #Change this to your own Azure Automation credential
 $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
 
 ###Get Access Token for Application permission
