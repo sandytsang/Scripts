@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    This script is for register users MFA authendication method with mobile phone number, use in Azure Automation Account
+    This script is for get no MFA registered users, use in Azure Automation Account
 
 .DESCRIPTION
-    This script will automatic add users mobile phone number as MFA authendication method
+    This script will get no MFA registered users
 
 .NOTES
-    File name: Invoke-RegisterMFAwithMobileNumbers.ps1
+    File name: Invoke-CheckMfaRegistration.ps1
     VERSION: 1.1.0
     AUTHOR: Sandy Zeng
     Created:  2020-09-23
@@ -30,7 +30,6 @@ $AppID = Get-AutomationVariable -Name "AppID" #Change this to your own app ID
 $AppSecret = Get-AutomationVariable -Name "AppSecret" #Change this to your own App Secret
 $AuthenticationCredentials = Get-AutomationPSCredential -Name "something@mvp24.onmicrosoft.com"
 $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
-
 
 ###Get Access Token for Application permission
 $authHeader = @{
@@ -61,7 +60,7 @@ $AuthTokenUser = @{
     Authorization = "$access_token"
 }
 
-##Get all no MFA registered users
+#Get all no MFA registered users
 $NoMFAUsers = @()
 do {
     try {
@@ -74,7 +73,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -98,7 +97,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -110,7 +109,7 @@ while ($StatusCode -eq 429)
 #All No MFA users principalName
 $NoMFAUsersUPN = $NoMFAUsers.userPrincipalName
 
-##Get members from Azure AD group
+#Get members from Azure AD group
 $Users = @()
 do {
     try {
@@ -125,7 +124,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -149,7 +148,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -162,11 +161,12 @@ while ($StatusCode -eq 429)
 $GroupMemberUPN = $Users.userPrincipalName
 
 #Compare results and get no MFA register user that are belong to the Azure AD group
-$UserObject = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
-Write-Output "$UserObject does not have MFA"        
+$UserObjects = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
+
 
 #Provision users mobile phone number as authentication phone method
 foreach ($UserObject in $UserObjects) {
+    Write-Output "====================================================================="      
     Write-Output "$UserObject does not have MFA, start provisiong phone methods for MFA"  
     $UserMobilePhone = ($Users | Where-Object {$_.userPrincipalName -match "$UserObject"}).mobilePhone
     $url = "https://graph.microsoft.com/beta/users/$UserObject/authentication/phoneMethods"
@@ -177,8 +177,8 @@ foreach ($UserObject in $UserObjects) {
     $json = ConvertTo-Json -InputObject $ObjectBody
     do {
         try {  
-            Invoke-RestMethod -Method POST -Uri $url -Headers $AuthTokenUser -Body $json -Verbose
-            Write-Output "$UserObject MFA methods is configured."  
+            Invoke-RestMethod -Method POST -Uri $url -Headers $AuthTokenUser -Body $json
+            Write-Output "$UserObject MFA methods is configured wiht phone number $UserMobilePhone"  
         }
         catch 
         {
@@ -189,8 +189,7 @@ foreach ($UserObject in $UserObjects) {
             }
             else {
                 Write-Error $_.Exception
-            }
-            
+            }            
         }
     }
     while ($StatusCode -eq 429)

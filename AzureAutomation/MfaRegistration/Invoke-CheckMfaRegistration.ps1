@@ -52,7 +52,8 @@ catch {
     Write-Warning "$Error[0]"
 }
 
-##Get all no MFA registered users
+
+#Get all no MFA registered users
 $NoMFAUsers = @()
 do {
     try {
@@ -65,7 +66,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -89,7 +90,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -101,7 +102,7 @@ while ($StatusCode -eq 429)
 #All No MFA users principalName
 $NoMFAUsersUPN = $NoMFAUsers.userPrincipalName
 
-##Get members from Azure AD group
+#Get members from Azure AD group
 $Users = @()
 do {
     try {
@@ -116,7 +117,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -140,7 +141,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 45
+            Start-Sleep -Seconds 10
         }
         else {
             Write-Error $_.Exception
@@ -153,7 +154,8 @@ while ($StatusCode -eq 429)
 $GroupMemberUPN = $Users.userPrincipalName
 
 #Compare results and get no MFA register user that are belong to the Azure AD group
-$UserObject = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
+$UserObjects = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
 foreach ($UserObject in $UserObjects) {
+    Write-Output "====================================================================="      
     Write-Output "$UserObject does not have MFA."
 }     
