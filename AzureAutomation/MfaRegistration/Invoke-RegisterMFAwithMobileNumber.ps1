@@ -51,7 +51,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
@@ -75,7 +75,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
@@ -102,7 +102,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
@@ -126,7 +126,7 @@ do {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         if ($StatusCode -eq 429) {
             Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 45
         }
         else {
             Write-Error $_.Exception
@@ -151,10 +151,19 @@ foreach ($UserObject in $UserObjects) {
         'phoneType' = "mobile"
     }
     $json = ConvertTo-Json -InputObject $ObjectBody
-    try {
-        Invoke-RestMethod -Method POST -Uri $url -Headers $AuthTokenUser -Body $json -Verbose
-    }
+    do {
+        try {  
+            Invoke-RestMethod -Method POST -Uri $url -Headers $AuthTokenUser -Body $json -Verbose
+        }
     catch {
-        Write-Warning "$Error[0]"
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        if ($StatusCode -eq 429) {
+            Write-Warning "Got throttled by Microsoft. Sleeping for 45 seconds..."
+            Start-Sleep -Seconds 45
+        }
+        else {
+            Write-Error $_.Exception
+        }
     }
 }
+while ($StatusCode -eq 429)
