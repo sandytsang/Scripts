@@ -99,7 +99,7 @@ if($UsersRespond) {
                 }
             } while ($StatusCode -eq 429)
     
-            if($NoMFAUsersRespond.value -ne $null) {
+            if($NoMFAUsersRespond.value) {
                 Write-Output "$userPrincipalName does not have MFA"
             }
             else {
