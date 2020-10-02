@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    This script is for get no MFA registered users, use in Azure Automation Account
+    This script is for getting no MFA registered users, use in Azure Automation Account
 
 .DESCRIPTION
     This script will get no MFA registered users
@@ -80,7 +80,7 @@ do {
         #If request is not throttled put data into result object
         $NoMFAUsers += $NoMFAUsersRespond.value
 
-        #If request is not trottled, go to nextlink if available to fetch more data
+        #If a request is not throttled, go to next link if available to fetch more data
         $url = $NoMFAUsersRespond.'@odata.nextlink'
     }
 
@@ -89,7 +89,7 @@ do {
 Until (!($url))
 
 
-#All No MFA users principalName
+#All No MFA users principal name
 $NoMFAUsersUPN = $NoMFAUsers.userPrincipalName
 
 #Get members from Azure AD group
@@ -120,7 +120,7 @@ do {
         #If request is not throttled put data into result object      
         $GroupMembers += $UsersRespond.value
         
-        #If request is not trottled, go to nextlink if available to fetch more data
+        #If a request is not throttled, go to next link if available to fetch more data
         $url = $UsersRespond.'@odata.nextlink'      
     }
 
@@ -132,7 +132,7 @@ Until (!($url))
 #All Group Member user PrincipalName
 $GroupMemberUPN = $GroupMembers.userPrincipalName
 
-#Compare results and get no MFA register user that are belong to the Azure AD group
+#Compare results and get no MFA register user that belongs to the Azure AD group
 $UserObjects = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
 
 #Provision users mobile phone number as authentication phone method
