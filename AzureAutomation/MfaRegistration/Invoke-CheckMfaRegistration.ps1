@@ -121,7 +121,7 @@ do {
 } 
 Until (!($url))
 
-#All Group Member user PrindipalName
+#All Group Member user PrincipalName
 $GroupMemberUPN = $GroupMembers.userPrincipalName
 
 #Compare results and get no MFA register user that are belong to the Azure AD group
