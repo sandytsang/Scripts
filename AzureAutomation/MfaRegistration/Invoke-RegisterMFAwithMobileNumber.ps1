@@ -32,7 +32,7 @@ $Tenant = "mvp24.onmicrosoft.com" #List here your tenants
 $authority = "https://login.microsoftonline.com/$tenant/oauth2/v2.0/token"
 $RedirectUrl = "https://login.microsoftonline.com/common/oauth2/nativeclient"
 $AppID = Get-AutomationVariable -Name "AppID" #Change this to your own app ID
-$AppSecret = Get-AutomationVariable -Name "AppSecret" #Change this to your own App Secret
+$AppSecret = ConvertTo-SecureString (Get-AutomationVariable -Name "AppSecret") -AsPlainText -Force #Change this to your own App Secret
 $AuthenticationCredentials = Get-AutomationPSCredential -Name "something@mvp24.onmicrosoft.com" #Change this to your own Azure Automation credential
 $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
 
