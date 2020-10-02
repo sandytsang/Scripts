@@ -43,7 +43,7 @@ $AuthTokenApp = @{
 }
 
 ###Get Access Token for delegated permission
-$requestUser = Get-MsalToken -ClientId $AppID -TenantId $Tenant -UserCredential $AuthenticationCredentials -RedirectUri "https://login.microsoftonline.com/common/oauth2/nativeclient" -Verbose
+$requestUser = Get-MsalToken -ClientId $AppID -TenantId $Tenant -UserCredential $AuthenticationCredentials -RedirectUri $RedirectUrl -Verbose
 $AuthTokenUser = @{
     Authorization = $requestUser.CreateAuthorizationHeader()
 }
