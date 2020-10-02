@@ -182,5 +182,5 @@ foreach ($UserObject in $UserObjects) {
 
         Start-Sleep -Seconds $RetryIn
     }
-    while (ThrottledRun -eq $true)
+    while ($ThrottledRun -eq $true)
 }
