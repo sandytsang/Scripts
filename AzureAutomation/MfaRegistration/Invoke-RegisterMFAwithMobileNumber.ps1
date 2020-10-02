@@ -21,6 +21,7 @@
     1.1.0 - (2020-10-01) Added throttling handling
     1.1.1 - (2020-10-01) Credit from Jan Ketil Skanke, make better throttling and paging https://github.com/MSEndpointMgr/AzureAD/blob/master/MSGraph-HandlePagingandThrottling.ps1
     1.1.2 - (2020-10-02) Removed exit 1, so that script will continue runs even there is error
+    1.1.3 - (2020-10-02) Fixed a bug.
 #>
 
 Import-Module -Name MSAL.PS
@@ -132,10 +133,9 @@ do {
         $GroupMembers += $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
         
         #If request is not trottled, go to nextlink if available to fetch more data
-        $url = $NoMFAUsersRespond.'@odata.nextlink'        
+        $url = $UsersRespond.'@odata.nextlink'      
     }
 
-    $url = $UsersRespond.'@odata.nextlink'
     Start-Sleep -Seconds $RetryIn
 
 } 

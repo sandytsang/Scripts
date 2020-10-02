@@ -20,7 +20,8 @@
     1.0.0 - (2020-09-23) Script created
     1.1.0 - (2020-10-01) Added throttling handling
     1.1.1 - (2020-10-01) Credit from Jan Ketil Skanke, make better throttling and paging https://github.com/MSEndpointMgr/AzureAD/blob/master/MSGraph-HandlePagingandThrottling.ps1
-    1.1.2 - (2020-10-02) Removed exit 1, so that script will continue runs even there is error   
+    1.1.2 - (2020-10-02) Removed exit 1, so that script will continue runs even there is error
+    1.1.3 - (2020-10-02) Fixed a bug.
 #>
 
 Import-Module -Name MSAL.PS
@@ -126,12 +127,10 @@ do {
         $GroupMembers += $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
 
         #If request is not trottled, go to nextlink if available to fetch more data
-        $url = $NoMFAUsersRespond.'@odata.nextlink'        
+        $url = $UsersRespond.'@odata.nextlink'      
     }
 
-    $url = $UsersRespond.'@odata.nextlink'
     Start-Sleep -Seconds $RetryIn
-
 } 
 Until (!($url))
 
@@ -140,7 +139,5 @@ $GroupMemberUPN = $GroupMembers.userPrincipalName
 
 #Compare results and get no MFA register user that are belong to the Azure AD group
 $UserObjects = (Compare-Object -ReferenceObject $NoMFAUsersUPN -DifferenceObject $GroupMemberUPN -Includeequal -ExcludeDifferent).InputObject
-foreach ($UserObject in $UserObjects) {
-    Write-Output "====================================================================="      
-    Write-Output "$UserObject does not have MFA."
-}
+Write-Output $UserObjects
+Write-Output $UserObjects.Count   
