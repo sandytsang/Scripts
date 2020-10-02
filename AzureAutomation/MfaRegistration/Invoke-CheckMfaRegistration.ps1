@@ -22,6 +22,7 @@
     1.1.1 - (2020-10-01) Credit from Jan Ketil Skanke, make better throttling and paging https://github.com/MSEndpointMgr/AzureAD/blob/master/MSGraph-HandlePagingandThrottling.ps1
     1.1.2 - (2020-10-02) Removed exit 1, so that script will continue runs even there is error
     1.1.3 - (2020-10-02) Fixed a bug.
+    1.1.4 - (2020-10-02) Updated use MSAL.PS get application token        
 #>
 
 Import-Module -Name MSAL.PS
@@ -29,32 +30,19 @@ Import-Module -Name MSAL.PS
 $scope = "https://graph.microsoft.com/.default"
 $Tenant = "mvp24.onmicrosoft.com" #List here your tenants
 $authority = "https://login.microsoftonline.com/$tenant/oauth2/v2.0/token"
+$RedirectUrl = "https://login.microsoftonline.com/common/oauth2/nativeclient"
 $AppID = Get-AutomationVariable -Name "AppID" #Change this to your own app ID
 $AppSecret = Get-AutomationVariable -Name "AppSecret" #Change this to your own App Secret
 $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
 
 ###Get Access Token for Application permission
-$authHeader = @{
-    'Content-Type' = 'application/x-www-form-urlencoded'
-}
+Get-MsalToken -ClientId $AppID -ClientSecret $AppSecret -TenantId $Tenant -Authority $authority -Scopes $scope -RedirectUri $RedirectUrl
 
-$authBody = @{
-    'client_id'        = $AppId
-    'grant_type'    = "client_credentials"
-    'client_secret' = "$AppSecret"
-    'scope'            = $scope
+###Get Access Token for delegated permission
+$requestApp = Get-MsalToken -ClientId $AppID -ClientSecret $AppSecret -TenantId $Tenant -Authority $authority -Scopes $scope -RedirectUri $RedirectUrl
+$AuthTokenApp = @{
+    Authorization = $requestApp.CreateAuthorizationHeader()
 }
-
-try {
-    $RequestApp = Invoke-RestMethod -Headers $authHeader -Uri $authority -Body $authBody -Method POST
-    $AuthTokenApp = @{
-        Authorization = "Bearer $($RequestApp.access_token)"
-    }
-}
-catch {
-    Write-Warning "$Error[0]"
-}
-
 
 #Get all no MFA registered users
 $NoMFAUsers = @()
