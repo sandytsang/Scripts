@@ -13,7 +13,7 @@
     COPYRIGHT:
     Sandy Zeng / https://www.sandyzeng.com
     Licensed under the MIT license.
-    Please credit me if you fint this script useful and do some cool things with it.
+    Please credit me if you find this script useful and do some cool things with it.
 
 
 .VERSION HISTORY:
@@ -36,9 +36,6 @@ $AppSecret = Get-AutomationVariable -Name "AppSecret" #Change this to your own A
 $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
 
 ###Get Access Token for Application permission
-Get-MsalToken -ClientId $AppID -ClientSecret $AppSecret -TenantId $Tenant -Authority $authority -Scopes $scope -RedirectUri $RedirectUrl
-
-###Get Access Token for delegated permission
 $requestApp = Get-MsalToken -ClientId $AppID -ClientSecret $AppSecret -TenantId $Tenant -Authority $authority -Scopes $scope -RedirectUri $RedirectUrl
 $AuthTokenApp = @{
     Authorization = $requestApp.CreateAuthorizationHeader()
