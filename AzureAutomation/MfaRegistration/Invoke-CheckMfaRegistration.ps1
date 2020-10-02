@@ -18,8 +18,9 @@
 
 .VERSION HISTORY:
     1.0.0 - (2020-09-23) Script created
-    1.1.0 - (2000-10-01) Added throttling handling
-    1.1.1 - (2000-10-01) Credit from Jan Ketil Skanke, make better throttling and paging https://github.com/MSEndpointMgr/AzureAD/blob/master/MSGraph-HandlePagingandThrottling.ps1
+    1.1.0 - (2020-10-01) Added throttling handling
+    1.1.1 - (2020-10-01) Credit from Jan Ketil Skanke, make better throttling and paging https://github.com/MSEndpointMgr/AzureAD/blob/master/MSGraph-HandlePagingandThrottling.ps1
+    1.1.2 - (2020-10-02) Removed exit 1, so that script will continue runs even there is error   
 #>
 
 Import-Module -Name MSAL.PS
@@ -76,7 +77,6 @@ do {
         } 
         else {
             Write-Error -Message "Inital graph query failed with $ErrorMessage"
-            Exit 1
         }
     }
 
@@ -118,7 +118,6 @@ do {
         } 
         else {
             Write-Error -Message "Inital graph query failed with $ErrorMessage"
-            Exit 1
         }
     }
 
