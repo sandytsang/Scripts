@@ -48,6 +48,7 @@ try {
 }
 catch {
     Write-Output  "$_.Exception.Message"
+    Exit 1
 }
 
 #Get all no MFA registered users
@@ -57,7 +58,7 @@ $url = "https://graph.microsoft.com/beta/reports/credentialUserRegistrationDetai
 do {
     $RetryIn = "0"
     $ThrottledRun = $false
-    Write-Output "Querying $url"
+
     try {
         $NoMFAUsersRespond = Invoke-RestMethod -Method Get -Uri $url -Headers $AuthTokenApp
     }
@@ -83,7 +84,6 @@ do {
         $url = $NoMFAUsersRespond.'@odata.nextlink'
     }
 
-
     Start-Sleep -Seconds $RetryIn
 } 
 Until (!($url))
@@ -98,7 +98,7 @@ $url = "https://graph.microsoft.com/beta//groups/$GroupObjectId/members?`$select
 do {
     $RetryIn = "0"
     $ThrottledRun = $false
-    Write-Output "Querying $url"    
+   
     try {
         $UsersRespond = Invoke-RestMethod -Method Get -Uri $url -Headers $AuthTokenApp -ErrorAction SilentlyContinue
     }

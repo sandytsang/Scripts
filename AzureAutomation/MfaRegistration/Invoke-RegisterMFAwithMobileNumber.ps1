@@ -56,6 +56,7 @@ try {
 }
 catch {
     Write-Output  "$_.Exception.Message"
+    Exit 1
 }
 
 
