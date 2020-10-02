@@ -22,7 +22,8 @@
     1.1.1 - (2020-10-01) Credit from Jan Ketil Skanke, make better throttling and paging https://github.com/MSEndpointMgr/AzureAD/blob/master/MSGraph-HandlePagingandThrottling.ps1
     1.1.2 - (2020-10-02) Removed exit 1, so that script will continue runs even there is error
     1.1.3 - (2020-10-02) Fixed a bug.
-    1.1.4 - (2020-10-02) Updated use MSAL.PS get application token    
+    1.1.4 - (2020-10-02) Updated use MSAL.PS get application token
+    1.1.5 - (2020-10-02) Improved Graph api filters https://developer.microsoft.com/en-us/identity/blogs/build-advanced-queries-with-count-filter-search-and-orderby/       
 #>
 
 Import-Module -Name MSAL.PS
@@ -40,12 +41,14 @@ $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
 $requestApp = Get-MsalToken -ClientId $AppID -ClientSecret $AppSecret -TenantId $Tenant -Authority $authority -Scopes $scope -RedirectUri $RedirectUrl
 $AuthTokenApp = @{
     Authorization = $requestApp.CreateAuthorizationHeader()
+    ConsistencyLevel = 'eventual'    
 }
 
 ###Get Access Token for delegated permission
 $requestUser = Get-MsalToken -ClientId $AppID -TenantId $Tenant -UserCredential $AuthenticationCredentials -RedirectUri $RedirectUrl -Verbose
 $AuthTokenUser = @{
     Authorization = $requestUser.CreateAuthorizationHeader()
+    ConsistencyLevel = 'eventual'   
 }
 
 #Get all no MFA registered users
@@ -91,7 +94,7 @@ $NoMFAUsersUPN = $NoMFAUsers.userPrincipalName
 
 #Get members from Azure AD group
 $GroupMembers = @()
-$url = "https://graph.microsoft.com/beta//groups/$GroupObjectId/members?`$select=userPrincipalName,mail,userType,mobilePhone"
+$url = "https://graph.microsoft.com/beta//groups/$GroupObjectId/members?`$select=userPrincipalName,mail,userType,mobilePhone&`$filter=mobilePhone+ne+null+and+userType+ne+'Guest'&`$count=true"
 do {
     $RetryIn = "0"
     $ThrottledRun = $false
@@ -115,7 +118,7 @@ do {
 
     if ($ThrottledRun -eq $false) {
         #If request is not throttled put data into result object      
-        $GroupMembers += $UsersRespond.value | Where-Object {$_.userType -ne 'Guest' -and $_.mobilePhone -ne $null}
+        $GroupMembers += $UsersRespond.value
         
         #If request is not trottled, go to nextlink if available to fetch more data
         $url = $UsersRespond.'@odata.nextlink'      
@@ -161,7 +164,7 @@ foreach ($UserObject in $UserObjects) {
                 Write-Output "Settings throttle retry to $($RetryIn)"
             } 
             else {
-                Write-Error -Message "Inital graph query failed with $ErrorMessage"
+                Write-Error -Message "Inital graph query failed with $ErrorMessage, possible phone number format is not correct"
             }
         }
 
