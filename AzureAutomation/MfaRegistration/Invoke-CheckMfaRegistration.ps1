@@ -26,6 +26,7 @@
     1.1.5 - (2020-10-02) Improved Graph api filters https://developer.microsoft.com/en-us/identity/blogs/build-advanced-queries-with-count-filter-search-and-orderby/           
 #>
 
+#Require MSAL.PS module
 Import-Module -Name MSAL.PS
 
 $scope = "https://graph.microsoft.com/.default"
@@ -36,11 +37,17 @@ $AppID = Get-AutomationVariable -Name "AppID" #Change this to your own app ID
 $AppSecret = ConvertTo-SecureString (Get-AutomationVariable -Name "AppSecret") -AsPlainText -Force
 $GroupObjectId = "457323e2-713c-4766-b47c-987017c48160"
 
-###Get Access Token for Application permission
-$requestApp = Get-MsalToken -ClientId $AppID -ClientSecret $AppSecret -TenantId $Tenant -Authority $authority -Scopes $scope -RedirectUri $RedirectUrl
-$AuthTokenApp = @{
-    Authorization = $requestApp.CreateAuthorizationHeader()
-    ConsistencyLevel = 'eventual'
+# Get Tokens
+try {
+    ###Get Access Token for Application permission
+    $requestApp = Get-MsalToken -ClientId $AppID -ClientSecret $AppSecret -TenantId $Tenant -Authority $authority -Scopes $scope -RedirectUri $RedirectUrl
+    $AuthTokenApp = @{
+        Authorization = $requestApp.CreateAuthorizationHeader()
+        ConsistencyLevel = 'eventual'    
+    }
+}
+catch {
+    Write-Output  "$_.Exception.Message"
 }
 
 #Get all no MFA registered users
