@@ -47,9 +47,8 @@ $AuthTokenApp = @{
 
 ###Get Access Token for delegated permission
 $requestUser = Get-MsalToken -ClientId $AppID -TenantId $Tenant -UserCredential $AuthenticationCredentials -RedirectUri "https://login.microsoftonline.com/common/oauth2/nativeclient" -Verbose
-$access_token = $requestUser.CreateAuthorizationHeader()
 $AuthTokenUser = @{
-    Authorization = "$access_token"
+    Authorization = $requestUser.CreateAuthorizationHeader()
 }
 
 #Get all no MFA registered users
