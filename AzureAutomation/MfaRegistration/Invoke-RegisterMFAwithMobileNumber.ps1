@@ -157,8 +157,7 @@ foreach ($UserObject in $UserObjects) {
     $json = ConvertTo-Json -InputObject $ObjectBody
     do {
         $RetryIn = "0"
-        $ThrottledRun = $false
-        Write-Output "Querying $url"          
+        $ThrottledRun = $false         
         try {  
             Invoke-RestMethod -Method POST -Uri $url -Headers $AuthTokenUser -Body $json
             Write-Output "$UserObject MFA methods is configured wiht phone number $UserMobilePhone"  
