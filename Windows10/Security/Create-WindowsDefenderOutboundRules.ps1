@@ -6,11 +6,9 @@
     This script will automatic create outbound firewall rules and schedule task for Windows Defender Updates
 
 .NOTES
-    File name: Add-Help.ps1
-    VERSION: 2005a
+    File name: Create-WindowsDefenderOutboundRules.ps1
     AUTHOR: Sandy Zeng
-    Created:  2020-07-23
-    Updated: $(Get-Date)
+    Created:  2020-10-18
     COPYRIGHT:
     Sandy Zeng / https://www.sandyzeng.com
     Licensed under the MIT license.
